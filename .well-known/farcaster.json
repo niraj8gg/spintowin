@@ -1,6 +1,18 @@
 {
-  "name": "Spin to Win",
-  "description": "Spin the wheel and earn rewards on Base!",
-  "url": "https://spintowin.vercel.app",
-  "verified_accounts": []
+  "accountAssociation": {
+    "header": "eyJmaWQiOjUyNTE5NSwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweGUwMDQ0MUIxYzQ1N0U0MWVmMTJGMGMwZjdBMzQ5M0VlNTg1RDBmODUifQ",
+    "payload": "eyJkb21haW4iOiJzcGludG93aW4tZmFyY2FzdGVyLnZlcmNlbC5hcHAifQ",
+    "signature": "dIfjW14WzIIXsL3kZ0MTdDCjoiiURDoNMCGLY8FuB64zCgi0WXWTfCOCUPidNH3LHf64P3xCYZFPVBfEKf0f6hw="
+  },
+  "frame": {
+    "version": "1",
+    "name": "Example Frame",
+    "iconUrl": "https://spintowin-farcaster.vercel.app/icon.png",
+    "homeUrl": "https://spintowin-farcaster.vercel.app",
+    "imageUrl": "https://spintowin-farcaster.vercel.app/image.png",
+    "buttonTitle": "Check this out",
+    "splashImageUrl": "https://spintowin-farcaster.vercel.app/splash.png",
+    "splashBackgroundColor": "#eeccff",
+    "webhookUrl": "https://spintowin-farcaster.vercel.app/api/webhook"
+  }
 }
