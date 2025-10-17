@@ -22,64 +22,12 @@
   }' />
 
   <style>
-    body {
-      margin: 0;
-      background: #111;
-      color: #fff;
-      font-family: Inter, system-ui, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      max-width: 390px;
-      margin-inline: auto;
-    }
-    .btn {
-      padding: 12px;
-      background: #ffd166;
-      color: #000;
-      border: none;
-      border-radius: 10px;
-      font-weight: 800;
-      width: 90%;
-      cursor: pointer;
-      margin: 8px auto;
-    }
-    .btn:disabled {
-      background: #666;
-      color: #ccc;
-      cursor: not-allowed;
-    }
-    .wheel-container {
-      position: relative;
-      width: 280px;
-      height: 280px;
-      margin: 20px auto;
-    }
-    .wheel {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      position: relative;
-      transition: transform 4s cubic-bezier(.2,.7,.2,1);
-      overflow: hidden;
-    }
-    .wheel-segment {
-      position: absolute;
-      width: 140px;
-      height: 140px;
-      top: 50%;
-      left: 50%;
-      transform-origin: 0 0;
-      clip-path: polygon(0 0, 86.6% 50%, 0 100%);
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      padding-left: 20px;
-      font-weight: 800;
-      font-size: 10px;
-      color: #000;
-    }
+    body{margin:0;background:#111;color:#fff;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;max-width:390px;margin-inline:auto}
+    .btn{padding:12px;background:#ffd166;color:#000;border:none;border-radius:10px;font-weight:800;width:90%;cursor:pointer;margin:8px auto}
+    .btn:disabled{background:#666;color:#ccc;cursor:not-allowed}
+    .wheel-container{position:relative;width:280px;height:280px;margin:20px auto}
+    .wheel{width:100%;height:100%;border-radius:50%;position:relative;transition:transform 4s cubic-bezier(.2,.7,.2,1);overflow:hidden}
+    .wheel-segment{position:absolute;width:140px;height:140px;top:50%;left:50%;transform-origin:0 0;clip-path:polygon(0 0,86.6% 50%,0 100%);display:flex;align-items:center;justify-content:flex-start;padding-left:20px;font-weight:800;font-size:10px;color:#000}
     .wheel-segment:nth-child(1){background:#ff6b6b;transform:rotate(0deg)}
     .wheel-segment:nth-child(2){background:#4ecdc4;transform:rotate(45deg)}
     .wheel-segment:nth-child(3){background:#45b7d1;transform:rotate(90deg)}
@@ -88,44 +36,10 @@
     .wheel-segment:nth-child(6){background:#ff9ff3;transform:rotate(225deg)}
     .wheel-segment:nth-child(7){background:#54a0ff;transform:rotate(270deg)}
     .wheel-segment:nth-child(8){background:#5f27cd;transform:rotate(315deg)}
-    .wheel-pointer {
-      position: absolute;
-      top: -10px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 0;
-      height: 0;
-      border-left: 15px solid transparent;
-      border-right: 15px solid transparent;
-      border-top: 30px solid #ffd166;
-      z-index: 10;
-    }
-    .toast {
-      position: fixed;
-      top: 14px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255,255,255,.12);
-      backdrop-filter: blur(8px);
-      color: #fff;
-      border: 1px solid rgba(255,255,255,.2);
-      border-radius: 14px;
-      padding: 10px 14px;
-      font-weight: 600;
-      max-width: 360px;
-      width: calc(100% - 24px);
-      box-shadow: 0 8px 30px rgba(0,0,0,.5);
-      display: none;
-      z-index: 9999;
-    }
-    .toast.show {
-      display: block;
-      animation: fadeIn .25s ease;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translate(-50%, -10px); }
-      to { opacity: 1; transform: translate(-50%, 0); }
-    }
+    .wheel-pointer{position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:15px solid transparent;border-right:15px solid transparent;border-top:30px solid #ffd166;z-index:10}
+    .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.12);backdrop-filter:blur(8px);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:10px 14px;font-weight:600;max-width:360px;width:calc(100% - 24px);box-shadow:0 8px 30px rgba(0,0,0,.5);display:none;z-index:9999}
+    .toast.show{display:block;animation:fadeIn .25s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}}
   </style>
 </head>
 <body>
@@ -146,7 +60,7 @@
 
   <button id="spinBtn" class="btn">SPIN TO WIN</button>
   <button id="withdrawBtn" class="btn hidden" disabled>Withdraw Reward</button>
-  <div id="result" style="font-weight:700;margin-top:10px;"></div>
+  <div id="result" style="font-weight:700;margin-top:10px;text-align:center;"></div>
   <div id="toast" class="toast"></div>
 
   <script type="module">
@@ -160,10 +74,10 @@
     await sdk.actions.ready({ disableNativeGestures: true });
 
     const toast = document.getElementById('toast');
-    const showToast = (msg, ms=3000) => { 
-      toast.textContent = msg; 
-      toast.classList.add('show'); 
-      setTimeout(()=>toast.classList.remove('show'), ms); 
+    const showToast = (msg, ms=3000) => {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), ms);
     };
 
     const wheel = document.getElementById('wheel');
@@ -175,47 +89,51 @@
       chains: [base],
       transports: { [base.id]: http() }
     });
+
     await connect(config, { connector: farcasterMiniApp() }).catch(()=>{});
-    const userAddress = getAccount(config)?.address;
+    const userAddress = getAccount(config)?.address?.toLowerCase();
 
     const baseJson = await fetch('/baseClaim.json').then(r=>r.json());
-    const BASE_ADDR = baseJson.address, BASE_ABI = baseJson.abi;
+    const BASE_ADDR = baseJson.address;
+    const BASE_ABI = baseJson.abi;
 
     let currentRot = 0;
 
-    const spinTo = (segment) => {
+    function spinTo(segment){
       const target = segment * 45;
       const spins = 6;
       const delta = ((target - (currentRot % 360)) + 360) % 360;
       currentRot += spins * 360 + delta;
+      wheel.style.transition = 'transform 4s cubic-bezier(.2,.7,.2,1)';
       wheel.style.transform = `rotate(${currentRot}deg)`;
-    };
-
-    // Event: SpinResult
-    watchContractEvent(config, {
-  address: BASE_ADDR,
-  abi: BASE_ABI,
-  eventName: 'SpinResult',
-  onLogs: logs => {
-    for (const log of logs) {
-      if (log.args?.player?.toLowerCase() !== userAddress?.toLowerCase()) continue; // 🧠 Filter only your logs
-      const seg = Number(log.args.segment);
-      const amt = Number(log.args.amount);
-      spinTo(seg);
-      if (amt > 0) {
-        result.textContent = `🎉 You won ${amt} tokens!`;
-        withdrawBtn.classList.remove('hidden');
-        withdrawBtn.disabled = false;
-        withdrawBtn.setAttribute('data-amount', amt);
-      } else {
-        result.textContent = `😢 No reward this time`;
-      }
-      spinBtn.disabled = false;
     }
-  }
-});
 
-    // Spin
+    // Listen for your own SpinResult events
+    watchContractEvent(config, {
+      address: BASE_ADDR,
+      abi: BASE_ABI,
+      eventName: 'SpinResult',
+      onLogs: logs => {
+        for (const log of logs) {
+          const player = log.args?.player?.toLowerCase?.();
+          if (player !== userAddress) continue; // only handle your event
+          const seg = Number(log.args.segment);
+          const amt = Number(log.args.amount);
+          spinTo(seg);
+          spinBtn.disabled = false;
+
+          if (amt > 0) {
+            result.textContent = `🎉 You won ${amt} tokens!`;
+            withdrawBtn.classList.remove('hidden');
+            withdrawBtn.disabled = false;
+          } else {
+            result.textContent = `😢 No reward this time`;
+          }
+        }
+      }
+    });
+
+    // SPIN action
     spinBtn.onclick = async () => {
       result.textContent = 'Spinning...';
       withdrawBtn.classList.add('hidden');
@@ -229,40 +147,36 @@
           functionName: 'spin',
           args: []
         });
-        showToast(`🎯 Spin sent: ${txHash.slice(0,8)}...`);
-      } catch {
+        showToast(`🎯 TX Sent: ${txHash.slice(0,8)}...`);
+      } catch (e) {
         showToast('❌ Spin failed.');
         spinBtn.disabled = false;
         return;
       }
 
-      // Fallback if event never arrives
+      // Fallback: auto reset after 30s
       setTimeout(() => {
         if (result.textContent === 'Spinning...') {
-          result.textContent = '⏳ Still waiting for result... check Basescan.';
+          result.textContent = '⏳ Still waiting for onchain event...';
           spinBtn.disabled = false;
         }
       }, 30000);
     };
 
-    // Withdraw
+    // WITHDRAW action
     withdrawBtn.onclick = async () => {
-      const amt = Number(withdrawBtn.getAttribute('data-amount')) || 0;
-      if (amt <= 0) {
-        showToast('⚠️ No reward amount detected.');
-        return;
-      }
       try {
         await switchChain(config, { chainId: base.id });
         const txHash = await writeContract(config, {
           address: BASE_ADDR,
           abi: BASE_ABI,
           functionName: 'withdraw',
-          args: []
+          args: [] // ✅ no arguments
         });
-        showToast(`✅ Withdrawn ${amt} tokens! TX: ${txHash.slice(0,8)}...`);
+        showToast(`✅ Withdraw TX: ${txHash.slice(0,8)}...`);
         withdrawBtn.disabled = true;
-      } catch {
+        result.textContent = '✅ Reward withdrawn successfully!';
+      } catch (e) {
         showToast('❌ Withdraw failed.');
       }
     };
