@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=390, initial-scale=1.0" />
   <title>Spin to Win</title>
 
-  <!-- Farcaster Mini App Metadata -->
   <meta name="fc:miniapp" content='{
     "version":"1",
     "imageUrl":"https://spintowin-farcaster.vercel.app/image.png",
@@ -66,7 +65,7 @@
   <script type="module">
     import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk';
     import {
-      createConfig, connect, switchChain, writeContract, watchContractEvent, getAccount, http
+      createConfig, connect, switchChain, writeContract, readContract, getAccount, http
     } from 'https://esm.sh/@wagmi/core';
     import { base } from 'https://esm.sh/@wagmi/core/chains';
     import { farcasterMiniApp } from 'https://esm.sh/@farcaster/miniapp-wagmi-connector';
@@ -74,11 +73,7 @@
     await sdk.actions.ready({ disableNativeGestures: true });
 
     const toast = document.getElementById('toast');
-    const showToast = (msg, ms=3000) => {
-      toast.textContent = msg;
-      toast.classList.add('show');
-      setTimeout(()=>toast.classList.remove('show'), ms);
-    };
+    const showToast = (msg, ms=3000) => { toast.textContent = msg; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), ms); };
 
     const wheel = document.getElementById('wheel');
     const spinBtn = document.getElementById('spinBtn');
@@ -89,16 +84,13 @@
       chains: [base],
       transports: { [base.id]: http() }
     });
-
     await connect(config, { connector: farcasterMiniApp() }).catch(()=>{});
-    const userAddress = getAccount(config)?.address?.toLowerCase();
+    const userAddress = getAccount(config)?.address;
 
     const baseJson = await fetch('/baseClaim.json').then(r=>r.json());
-    const BASE_ADDR = baseJson.address;
-    const BASE_ABI = baseJson.abi;
+    const BASE_ADDR = baseJson.address, BASE_ABI = baseJson.abi;
 
     let currentRot = 0;
-
     function spinTo(segment){
       const target = segment * 45;
       const spins = 6;
@@ -108,37 +100,31 @@
       wheel.style.transform = `rotate(${currentRot}deg)`;
     }
 
-    // Listen for your own SpinResult events
-    watchContractEvent(config, {
-      address: BASE_ADDR,
-      abi: BASE_ABI,
-      eventName: 'SpinResult',
-      onLogs: logs => {
-        for (const log of logs) {
-          const player = log.args?.player?.toLowerCase?.();
-          if (player !== userAddress) continue; // only handle your event
-          const seg = Number(log.args.segment);
-          const amt = Number(log.args.amount);
-          spinTo(seg);
-          spinBtn.disabled = false;
-
-          if (amt > 0) {
-            result.textContent = `🎉 You won ${amt} tokens!`;
-            withdrawBtn.classList.remove('hidden');
-            withdrawBtn.disabled = false;
-          } else {
-            result.textContent = `😢 No reward this time`;
-          }
+    // Check user's pending reward after spin
+    async function checkPendingReward(){
+      try {
+        const reward = await readContract(config, {
+          address: BASE_ADDR,
+          abi: BASE_ABI,
+          functionName: 'pendingRewards',
+          args: [userAddress]
+        });
+        const amt = Number(reward);
+        if(amt > 0){
+          result.textContent = `🎉 You won ${amt} tokens!`;
+          withdrawBtn.classList.remove('hidden');
+          withdrawBtn.disabled = false;
+        } else {
+          result.textContent = `😢 No reward this time`;
         }
-      }
-    });
+      } catch(e){ console.error(e); }
+    }
 
-    // SPIN action
+    // SPIN button
     spinBtn.onclick = async () => {
       result.textContent = 'Spinning...';
       withdrawBtn.classList.add('hidden');
       spinBtn.disabled = true;
-
       try {
         await switchChain(config, { chainId: base.id });
         const txHash = await writeContract(config, {
@@ -148,22 +134,17 @@
           args: []
         });
         showToast(`🎯 TX Sent: ${txHash.slice(0,8)}...`);
-      } catch (e) {
+        // wait for block confirmation before checking
+        setTimeout(checkPendingReward, 15000);
+      } catch(e){
+        console.error(e);
         showToast('❌ Spin failed.');
+      } finally {
         spinBtn.disabled = false;
-        return;
       }
-
-      // Fallback: auto reset after 30s
-      setTimeout(() => {
-        if (result.textContent === 'Spinning...') {
-          result.textContent = '⏳ Still waiting for onchain event...';
-          spinBtn.disabled = false;
-        }
-      }, 30000);
     };
 
-    // WITHDRAW action
+    // WITHDRAW button
     withdrawBtn.onclick = async () => {
       try {
         await switchChain(config, { chainId: base.id });
@@ -171,12 +152,13 @@
           address: BASE_ADDR,
           abi: BASE_ABI,
           functionName: 'withdraw',
-          args: [] // ✅ no arguments
+          args: []
         });
         showToast(`✅ Withdraw TX: ${txHash.slice(0,8)}...`);
         withdrawBtn.disabled = true;
         result.textContent = '✅ Reward withdrawn successfully!';
-      } catch (e) {
+      } catch(e){
+        console.error(e);
         showToast('❌ Withdraw failed.');
       }
     };
