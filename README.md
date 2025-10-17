@@ -6,11 +6,11 @@
 
 ## 🌐 Live Demo
 **MiniApp URL:**  
-👉 [https://spintowin.vercel.app/](https://spintowin.vercel.app/)
+👉 [https://spintowin-farcaster.vercel.app/](https://spintowin-farcaster.vercel.app/)
 
 **Farcaster Post Example:**  
 🎯 Spin the wheel and win $SUPINU rewards on Base!
-https://spintowin.vercel.app/
+https://spintowin-farcaster.vercel.app/
 
 yaml
 Copy code
