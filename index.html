@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=390, initial-scale=1.0" />
+  <title>Spin to Win</title>
+
+  <!-- Farcaster Mini App Metadata -->
+  <meta name="fc:miniapp" content='{
+    "version":"1",
+    "imageUrl":"https://spintowin.vercel.app/image.png",
+    "button":{
+      "title":"Spin to Win",
+      "action":{
+        "type":"launch_frame",
+        "name":"Spin to Win",
+        "url":"https://spintowin.vercel.app/",
+        "splashImageUrl":"https://spintowin.vercel.app/splash.png",
+        "splashBackgroundColor":"#111111"
+      }
+    }
+  }' />
+
+  <style>
+    body{margin:0;background:#111;color:#fff;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;max-width:390px;margin-inline:auto}
+    .btn{padding:12px;background:#ffd166;color:#000;border:none;border-radius:10px;font-weight:800;width:90%;cursor:pointer;margin:8px auto}
+    .btn:disabled{background:#666;color:#ccc;cursor:not-allowed}
+    .wheel-container{position:relative;width:280px;height:280px;margin:20px auto}
+    .wheel{width:100%;height:100%;border-radius:50%;position:relative;transition:transform 4s cubic-bezier(.2,.7,.2,1);overflow:hidden}
+    .wheel-segment{position:absolute;width:140px;height:140px;top:50%;left:50%;transform-origin:0 0;clip-path:polygon(0 0, 86.6% 50%, 0 100%);display:flex;align-items:center;justify-content:flex-start;padding-left:20px;font-weight:800;font-size:10px;color:#000}
+    .wheel-segment:nth-child(1){background:#ff6b6b;transform:rotate(0deg)}
+    .wheel-segment:nth-child(2){background:#4ecdc4;transform:rotate(45deg)}
+    .wheel-segment:nth-child(3){background:#45b7d1;transform:rotate(90deg)}
+    .wheel-segment:nth-child(4){background:#96ceb4;transform:rotate(135deg)}
+    .wheel-segment:nth-child(5){background:#feca57;transform:rotate(180deg)}
+    .wheel-segment:nth-child(6){background:#ff9ff3;transform:rotate(225deg)}
+    .wheel-segment:nth-child(7){background:#54a0ff;transform:rotate(270deg)}
+    .wheel-segment:nth-child(8){background:#5f27cd;transform:rotate(315deg)}
+    .wheel-pointer{position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:15px solid transparent;border-right:15px solid transparent;border-top:30px solid #ffd166;z-index:10}
+    .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.12);backdrop-filter:blur(8px);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:10px 14px;font-weight:600;max-width:360px;width:calc(100% - 24px);box-shadow:0 8px 30px rgba(0,0,0,.5);display:none;z-index:9999}
+    .toast.show{display:block;animation:fadeIn .25s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}}
+  </style>
+</head>
+<body>
+
+  <div class="wheel-container">
+    <div class="wheel-pointer"></div>
+    <div id="wheel" class="wheel">
+      <div class="wheel-segment">500</div>
+      <div class="wheel-segment">1000</div>
+      <div class="wheel-segment">2500</div>
+      <div class="wheel-segment">5000</div>
+      <div class="wheel-segment">10000</div>
+      <div class="wheel-segment">20000</div>
+      <div class="wheel-segment">2X</div>
+      <div class="wheel-segment">Miss</div>
+    </div>
+  </div>
+
+  <button id="spinBtn" class="btn">SPIN TO WIN</button>
+  <button id="withdrawBtn" class="btn hidden" disabled>Withdraw Reward</button>
+  <div id="result" style="font-weight:700;margin-top:10px;"></div>
+  <div id="toast" class="toast"></div>
+
+  <script type="module">
+    import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk';
+    import {
+      createConfig, connect, switchChain, writeContract, watchContractEvent, getAccount, http
+    } from 'https://esm.sh/@wagmi/core';
+    import { base } from 'https://esm.sh/@wagmi/core/chains';
+    import { farcasterMiniApp } from 'https://esm.sh/@farcaster/miniapp-wagmi-connector';
+
+    await sdk.actions.ready({ disableNativeGestures: true });
+
+    const toast = document.getElementById('toast');
+    const showToast = (msg, ms=3000) => { toast.textContent = msg; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), ms); };
+
+    const wheel = document.getElementById('wheel');
+    const spinBtn = document.getElementById('spinBtn');
+    const withdrawBtn = document.getElementById('withdrawBtn');
+    const result = document.getElementById('result');
+
+    const config = createConfig({
+      chains: [base],
+      transports: { [base.id]: http() }
+    });
+    await connect(config, { connector: farcasterMiniApp() }).catch(()=>{});
+    const userAddress = getAccount(config)?.address;
+
+    const baseJson = await fetch('/baseClaim.json').then(r=>r.json());
+    const BASE_ADDR = baseJson.address, BASE_ABI = baseJson.abi;
+
+    let currentRot = 0;
+
+    const spinTo = (segment) => {
+      const target = segment * 45;
+      const spins = 6;
+      const delta = ((target - (currentRot % 360)) + 360) % 360;
+      currentRot += spins * 360 + delta;
+      wheel.style.transform = `rotate(${currentRot}deg)`;
+    };
+
+    // Event: SpinResult
+    watchContractEvent(config, {
+      address: BASE_ADDR,
+      abi: BASE_ABI,
+      eventName: 'SpinResult',
+      onLogs: logs => {
+        for (const log of logs) {
+          const seg = Number(log.args?.segment);
+          const amt = Number(log.args?.amount);
+          spinTo(seg);
+          if (amt > 0) {
+            result.textContent = `🎉 You won ${amt} tokens!`;
+            withdrawBtn.classList.remove('hidden');
+            withdrawBtn.disabled = false;
+          } else {
+            result.textContent = `😢 No reward this time`;
+          }
+        }
+      }
+    });
+
+    // Spin
+    spinBtn.onclick = async () => {
+      result.textContent = 'Spinning...';
+      withdrawBtn.classList.add('hidden');
+      try {
+        await switchChain(config, { chainId: base.id });
+        const txHash = await writeContract(config, {
+          address: BASE_ADDR,
+          abi: BASE_ABI,
+          functionName: 'spin',
+          args: []
+        });
+        showToast(`Spinning... TX: ${txHash.slice(0,8)}...`);
+      } catch {
+        showToast('❌ Spin failed.');
+      }
+    };
+
+    // Withdraw
+    withdrawBtn.onclick = async () => {
+      try {
+        await switchChain(config, { chainId: base.id });
+        const txHash = await writeContract(config, {
+          address: BASE_ADDR,
+          abi: BASE_ABI,
+          functionName: 'withdraw',
+          args: [1000] // Replace with correct reward amount
+        });
+        showToast(`✅ Withdrawn! ${txHash.slice(0,8)}...`);
+        withdrawBtn.disabled = true;
+      } catch {
+        showToast('❌ Withdraw failed.');
+      }
+    };
+  </script>
+</body>
+</html>
