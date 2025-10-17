@@ -65,7 +65,7 @@
   <script type="module">
     import { sdk } from 'https://esm.sh/@farcaster/miniapp-sdk';
     import {
-      createConfig, connect, switchChain, writeContract, readContract, getAccount, http
+      createConfig, connect, switchChain, writeContract, readContract, getAccount, waitForTransactionReceipt, http
     } from 'https://esm.sh/@wagmi/core';
     import { base } from 'https://esm.sh/@wagmi/core/chains';
     import { farcasterMiniApp } from 'https://esm.sh/@farcaster/miniapp-wagmi-connector';
@@ -84,6 +84,7 @@
       chains: [base],
       transports: { [base.id]: http() }
     });
+
     await connect(config, { connector: farcasterMiniApp() }).catch(()=>{});
     const userAddress = getAccount(config)?.address;
 
@@ -100,7 +101,6 @@
       wheel.style.transform = `rotate(${currentRot}deg)`;
     }
 
-    // Check user's pending reward after spin
     async function checkPendingReward(){
       try {
         const reward = await readContract(config, {
@@ -114,17 +114,15 @@
           result.textContent = `🎉 You won ${amt} tokens!`;
           withdrawBtn.classList.remove('hidden');
           withdrawBtn.disabled = false;
-        } else {
-          result.textContent = `😢 No reward this time`;
         }
       } catch(e){ console.error(e); }
     }
 
-    // SPIN button
     spinBtn.onclick = async () => {
       result.textContent = 'Spinning...';
       withdrawBtn.classList.add('hidden');
       spinBtn.disabled = true;
+
       try {
         await switchChain(config, { chainId: base.id });
         const txHash = await writeContract(config, {
@@ -134,8 +132,31 @@
           args: []
         });
         showToast(`🎯 TX Sent: ${txHash.slice(0,8)}...`);
-        // wait for block confirmation before checking
-        setTimeout(checkPendingReward, 15000);
+
+        // Wait for transaction receipt and parse logs
+        const receipt = await waitForTransactionReceipt(config, { hash: txHash });
+        const log = receipt.logs.find(l => l.topics && l.topics.length > 0);
+        if(log){
+          try {
+            const iface = new ethers.utils.Interface(BASE_ABI);
+            const decoded = iface.parseLog(log);
+            if(decoded.name === "SpinResult"){
+              const seg = Number(decoded.args.segment);
+              const amt = Number(decoded.args.amount);
+              spinTo(seg);
+              if(amt > 0){
+                result.textContent = `🎉 You won ${amt} tokens!`;
+                withdrawBtn.classList.remove('hidden');
+                withdrawBtn.disabled = false;
+              } else {
+                result.textContent = `😢 No reward this time`;
+              }
+            }
+          } catch {}
+        }
+        // also check pending rewards directly after spin
+        setTimeout(checkPendingReward, 4000);
+
       } catch(e){
         console.error(e);
         showToast('❌ Spin failed.');
@@ -144,7 +165,6 @@
       }
     };
 
-    // WITHDRAW button
     withdrawBtn.onclick = async () => {
       try {
         await switchChain(config, { chainId: base.id });
@@ -152,7 +172,7 @@
           address: BASE_ADDR,
           abi: BASE_ABI,
           functionName: 'withdraw',
-          args: []
+          args: [] // no args
         });
         showToast(`✅ Withdraw TX: ${txHash.slice(0,8)}...`);
         withdrawBtn.disabled = true;
