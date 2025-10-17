@@ -193,26 +193,27 @@
 
     // Event: SpinResult
     watchContractEvent(config, {
-      address: BASE_ADDR,
-      abi: BASE_ABI,
-      eventName: 'SpinResult',
-      onLogs: logs => {
-        for (const log of logs) {
-          const seg = Number(log.args?.segment);
-          const amt = Number(log.args?.amount);
-          spinTo(seg);
-          if (amt > 0) {
-            result.textContent = `🎉 You won ${amt} tokens!`;
-            withdrawBtn.classList.remove('hidden');
-            withdrawBtn.disabled = false;
-            withdrawBtn.setAttribute('data-amount', amt);
-          } else {
-            result.textContent = `😢 No reward this time`;
-          }
-          spinBtn.disabled = false;
-        }
+  address: BASE_ADDR,
+  abi: BASE_ABI,
+  eventName: 'SpinResult',
+  onLogs: logs => {
+    for (const log of logs) {
+      if (log.args?.player?.toLowerCase() !== userAddress?.toLowerCase()) continue; // 🧠 Filter only your logs
+      const seg = Number(log.args.segment);
+      const amt = Number(log.args.amount);
+      spinTo(seg);
+      if (amt > 0) {
+        result.textContent = `🎉 You won ${amt} tokens!`;
+        withdrawBtn.classList.remove('hidden');
+        withdrawBtn.disabled = false;
+        withdrawBtn.setAttribute('data-amount', amt);
+      } else {
+        result.textContent = `😢 No reward this time`;
       }
-    });
+      spinBtn.disabled = false;
+    }
+  }
+});
 
     // Spin
     spinBtn.onclick = async () => {
